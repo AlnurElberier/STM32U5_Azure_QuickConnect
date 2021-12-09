@@ -69,8 +69,6 @@ def findPath():
         break
   else:
     sys.exit()
-
-  print(USBPATH)
   
   return USBPATH
 
@@ -93,8 +91,6 @@ def flash(file, USBPATH, com):
 #Find Serial port for STM32 device
 def findPort():
   ports = serial.tools.list_ports.comports()
-
-  print(ports)
     
   for p in ports:
     if "stlink" in p.description.lower():
@@ -126,6 +122,14 @@ def getCredentials():
   return ssid, pswd, idscope, deviceid, primaryKey
 
 
+# Waits until serial port has full message in_waiting.
+def wait(ser):
+    start = ser.in_waiting
+    time.sleep(0.5)
+    while ser.in_waiting > start:
+        time.sleep(0.5)
+        start = ser.in_waiting
+
 #Interfaces with EEPPROM firmware to store required credentials
 def storeCredentials(port, endpt, ssid, pswd, idscope, deviceID, primaryKey):
   # Setting Baud Rate
@@ -133,55 +137,56 @@ def storeCredentials(port, endpt, ssid, pswd, idscope, deviceID, primaryKey):
 
   # Send the Endpoint
   ser.write(b'1')
-  time.sleep(2)
+  wait(ser)
   print("Storing Endpoint " + repr(endpt))
   ser.write(bytes(endpt, 'utf-8'))
   ser.write(bytes("\r\n", 'utf-8'))
-  time.sleep(2)
+  wait(ser)
 
   # Send the SSID
   ser.write(b'2')
-  time.sleep(1)
+  wait(ser)
   print("Storing SSID " + repr(ssid))
   ser.write(bytes(ssid, 'utf-8'))
   ser.write(bytes("\r\n", 'utf-8'))
-  time.sleep(2)
+  wait(ser)
 
   # Send the PASSWD
+  pswdSec = '*' * len(pswd)
   ser.write(b'3')
-  time.sleep(1)
-  print("Storing Password " + repr(pswd))
+  wait(ser)
+  print("Storing Password " + repr(pswdSec))
   ser.write(bytes(pswd, 'utf-8'))
   ser.write(bytes("\r\n", 'utf-8'))
-  time.sleep(2)
+  wait(ser)
 
   # Send the IDScope
   ser.write(b'5')
-  time.sleep(1)
+  wait(ser)
   print("Storing Scope ID " + repr(idscope))
   ser.write(bytes(idscope, 'utf-8'))
   ser.write(bytes("\r\n", 'utf-8'))
-  time.sleep(2)
+  wait(ser)
 
   # Send the Registration
   ser.write(b'6')
-  time.sleep(1)
+  wait(ser)
   print("Storing Thing Name " + repr(deviceID))
   ser.write(bytes(deviceID, 'utf-8'))
   ser.write(bytes("\r\n", 'utf-8'))
-  time.sleep(2)
+  wait(ser)
 
   # Send the Registration
   ser.write(b'7')
-  time.sleep(1)
+  wait(ser)
   print("Storing Primary Key " + repr(primaryKey))
   ser.write(bytes(primaryKey, 'utf-8'))
   ser.write(bytes("\r\n", 'utf-8'))
-  time.sleep(2)
+  wait(ser)
 
   # Writing all credentials to EEPROM 
   ser.write(b'8')
-  time.sleep(2)
+  wait(ser)
 
   # Closing Serial Port
   ser.close()
@@ -208,30 +213,28 @@ def readSerial(port):
 def main():
   #Find serial port
   com = findPort()
-  print("STM32 COM Port Found: " + com)
+  print("STM32 COM Port Found: " + com + '\n')
 
   #Find board path 
   path = findPath()
-  print("STM32 File Path Found: " + path)
+  print("STM32 File Path Found: " + path + '\n')
 
   #Collect SSID and PSWD
   ssid, pswd, idscope, deviceID, primaryKey = getCredentials()
-  print("Collected SSID From Config.txt: " + ssid)
-  print("Collected PSWD From Config.txt: " + pswd)
-  print("Collected PSWD From Config.txt: " + idscope)
-  print("Collected PSWD From Config.txt: " + deviceID)
-  print("Collected PSWD From Config.txt: " + primaryKey)
+  print("Collected Parameters From Config.txt" + '\n')
 
   #Flash EEPROM project
   flash(getcwd('Binaries/STM32U585_DK_EEPROM.bin'), path, com)
-  time.sleep(5) #provide enough time for flashing
+  print('\n')
 
   #Communicate credentials to board over serial
   endpt = 'global.azure-devices-provisioning.net'
   storeCredentials(com, endpt, ssid, pswd, idscope, deviceID, primaryKey)
+  print('\n')
 
   #Flash main application
   flash(getcwd('Binaries/B-U585I-IOT02A_SampleApp.bin'), path, com)
+  print('\n')
 
   #Print out serial
   readSerial(com)
