@@ -1,5 +1,5 @@
-SSID: Ziply-3970
-PASSWORD: clarycantusethis206
+SSID: Iphone
+PASSWORD: 1wordpass2
 IDSCOPE: 0ne003E221D
 DEVICEID: test
 PRIMARYKEY: 0qEeTGkAI2ebTBo7bOIEiSCGkh6nsxtnjWgRTHyWsfM=
